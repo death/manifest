@@ -78,7 +78,8 @@ string and an empty string."
 
               (:body
                (:div :style "float: right" (:input :id "toggle-internals" :type "checkbox") " Show internal symbols")
-               (:h1 (:print (package-name package)))
+               (:h1 (:a :href "/" "Manifest"))
+               (:h2 (:print (package-name package)))
 
 
                 (when (package-nicknames package)
@@ -147,7 +148,8 @@ string and an empty string."
          (:title "Manifest: all packages")
          (:link :rel "stylesheet" :type "text/css" :href "/manifest.css"))
         (:body
-         (:h1 "All Packages")
+         (:h1 (:a :href "/" "Manifest"))
+         (:h2 "All Packages")
          ((:ul :class "packages")
           (loop for pkg in (sort (mapcar #'package-name (public-packages)) #'string<)
              do (html (:li (:a :class "package" :href (:format "/package/~a" (case-invert-name pkg)) pkg))))))))))
