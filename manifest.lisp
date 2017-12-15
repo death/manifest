@@ -45,10 +45,7 @@ a true Common Lisp while still working in Allegro's mlisp."
 (defun manifest (request)
   (cond
     ((string= (request-path request) "/") (index-page request))
-    #+quicklisp((string= (request-path request) "/quicklisp") (quicklisp-page request))
-    #+quicklisp((starts-with-subseq "/quicklisp/install/" (request-path request)) (quicklisp-install request))
     ((starts-with-subseq "/package/" (request-path request)) (package-page request))))
-
 
 (defun split-at (delimiter string)
   "Split the supplied string in two based on the delimiter; returns

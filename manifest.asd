@@ -13,5 +13,4 @@
                :monkeylib-html
                :yaclml)
   :components ((:file "packages")
-               (:file "manifest" :depends-on ("packages"))
-               #+quicklisp(:file "quicklisp" :depends-on ("packages"))))
+               (:file "manifest" :depends-on ("packages"))))
