@@ -50,10 +50,19 @@ a true Common Lisp while still working in Allegro's mlisp."
     ((starts-with-subseq "/package/" (request-path request)) (package-page request))))
 
 
+(defun split-at (delimiter string)
+  "Split the supplied string in two based on the delimiter; returns
+the two parts as values.  If no delimiter was found, returns the
+string and an empty string."
+  (let ((pos (search delimiter string)))
+    (if (null pos)
+        (values string "")
+        (values (subseq string 0 pos)
+                (subseq string (+ pos (length delimiter)))))))
+
 (defun package-page (request)
-  (destructuring-bind (prefix package-name &rest rest)
-      (split-sequence #\/ (subseq (request-path request) 1))
-    (declare (ignore rest))
+  (multiple-value-bind (prefix package-name)
+      (split-at "/" (subseq (request-path request) 1))
     (assert (string= prefix "package"))
 
     (when-let (package (find-package (case-invert-name package-name)))
