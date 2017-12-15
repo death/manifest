@@ -111,7 +111,8 @@ string and an empty string."
                (let ((readme (readme-text package-name)))
                  (when readme
                    (setf some-docs-p t)
-                   (<:pre (<:ai readme))))
+                   (<:ai (with-output-to-string (out)
+                           (3bmd:parse-string-and-print-to-stream readme out)))))
 
                (loop for what in *categories*
                      for names = (names package what)
