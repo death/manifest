@@ -60,6 +60,10 @@ string and an empty string."
         (values (subseq string 0 pos)
                 (subseq string (+ pos (length delimiter)))))))
 
+(defun order (sequence predicate &rest args)
+  "A nondestructive SORT."
+  (apply #'sort (copy-seq sequence) predicate args))
+
 (defun package-page (request)
   (multiple-value-bind (prefix package-name)
       (split-at "/" (subseq (request-path request) 1))
@@ -104,21 +108,21 @@ string and an empty string."
                                  (<:td :class "symbol" (<:ah (princ-to-string sym)))
                                  (<:td :class "docs" (<:ah (or (docs-for sym what) "NO DOCS!")))))))
 
-               (let ((used-by (sort (package-used-by-list package) #'string< :key #'package-name)))
+               (let ((used-by (order (package-used-by-list package) #'string< :key #'package-name)))
                  (when used-by
                    (<:h2 "Used by:")
-                   (<:ul
+                   (<:ul :class "packages"
                     (loop for p in used-by
                           do (<:li (<:a :href (format nil "/package/~(~A~)" (package-name p))
                                         (<:ah (package-name p))))))))
 
-               (let ((uses (sort (package-use-list package) #'string< :key #'package-name)))
+               (let ((uses (order (package-use-list package) #'string< :key #'package-name)))
                  (when uses
                    (<:h2 "Uses:")
-                   (<:ul
-                    (loop for p in uses
-                          do (<:li (<:a :href (format nil "/package/~(~A~)" (package-name p))
-                                        (<:ah (package-name p))))))))
+                   (<:ul :class "packages"
+                         (loop for p in uses
+                               do (<:li (<:a :href (format nil "/package/~(~A~)" (package-name p))
+                                             (<:ah (package-name p))))))))
 
 
                 (unless some-docs-p
