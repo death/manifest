@@ -64,6 +64,14 @@ string and an empty string."
   "A nondestructive SORT."
   (apply #'sort (copy-seq sequence) predicate args))
 
+(defun package-link (package)
+  "Return an absolute link to the package's page."
+  (etypecase package
+    (package
+     (package-link (package-name package)))
+    (string
+     (format nil "/package/~(~A~)" package))))
+
 (defun package-page (request)
   (multiple-value-bind (prefix package-name)
       (split-at "/" (subseq (request-path request) 1))
@@ -78,11 +86,19 @@ string and an empty string."
                (<:title (<:format "Package: ~A" (package-name package)))
                (<:stylesheet "/manifest.css"))
               (<:body
-               (<:div :style "float: right"
-                      (<:checkbox :id "toggle-internals")
-                      " Show internal symbols")
-               (<:h1 (<:a :href "/" "Manifest"))
-               (<:h2 (<:ah (package-name package)))
+               (<:h5 (<:a :href "/" "MANIFEST"))
+
+               (let ((prev-package (package-name (package-before package))))
+                 (<:a :class "prev-package"
+                      :href (package-link prev-package)
+                      (<:ai "&larr; ") (<:ah prev-package)))
+
+               (let ((next-package (package-name (package-after package))))
+                 (<:a :class "next-package"
+                      :href (package-link next-package)
+                      (<:ah next-package) (<:ai " &rarr;")))
+
+               (<:h1 (<:ah (package-name package)))
 
                (when (package-nicknames package)
                  (<:p :class "nicknames"
@@ -104,7 +120,7 @@ string and an empty string."
                         (<:h2 (<:format "~:(~a~)" (pluralization what)))
                         (<:table
                          (dolist (sym names)
-                           (<:tr :class (format nil "~:[not-documented~;~]~:[ internal~;~]" (docs-for sym what) (exported-p sym))
+                           (<:tr :class (format nil "~:[not-documented~;~]" (docs-for sym what))
                                  (<:td :class "symbol" (<:ah (princ-to-string sym)))
                                  (<:td :class "docs" (<:ah (or (docs-for sym what) "NO DOCS!")))))))
 
@@ -113,44 +129,44 @@ string and an empty string."
                    (<:h2 "Used by:")
                    (<:ul :class "packages"
                     (loop for p in used-by
-                          do (<:li (<:a :href (format nil "/package/~(~A~)" (package-name p))
-                                        (<:ah (package-name p))))))))
+                          do (<:li (<:a :href (package-link p) (<:ah (package-name p))))))))
 
                (let ((uses (order (package-use-list package) #'string< :key #'package-name)))
                  (when uses
                    (<:h2 "Uses:")
                    (<:ul :class "packages"
                          (loop for p in uses
-                               do (<:li (<:a :href (format nil "/package/~(~A~)" (package-name p))
-                                             (<:ah (package-name p))))))))
+                               do (<:li (<:a :href (package-link p) (<:ah (package-name p))))))))
 
 
                 (unless some-docs-p
                   (<:p "Uh oh! No docs at all."))))))))))
-
-(defun exported-p (sym)
-  (cond
-    ((consp sym)
-     (assert (eql (first sym) 'setf))
-     (exported-p (second sym)))
-    (t
-     (eql (nth-value 1 (find-symbol (symbol-name sym) (symbol-package sym))) :external))))
 
 (defun index-page (request)
   (with-response-body (s request)
     (with-yaclml-stream s
       (<:html
         (<:head
-         (<:title "Manifest: all packages")
+         (<:title "MANIFEST: all packages")
          (<:stylesheet "/manifest.css"))
         (<:body
-         (<:h1 (<:a :href "/" "Manifest"))
+         (<:h1 "MANIFEST")
          (<:h2 "All Packages")
          (<:ul :class "packages"
                (loop for pkg in (sort (mapcar #'package-name (public-packages)) #'string<)
                      do (<:li (<:a :class "package"
-                                   :href (format nil "/package/~A" (case-invert-name pkg))
+                                   :href (package-link pkg)
                                    (<:ah pkg))))))))))
+
+(defun package-before (package)
+  (let* ((all (sort (mapcar #'package-name (public-packages)) #'string>))
+         (mem (member (package-name package) all :test #'equal)))
+    (or (cadr mem) (car all))))
+
+(defun package-after (package)
+  (let* ((all (sort (mapcar #'package-name (public-packages)) #'string<))
+         (mem (member (package-name package) all :test #'equal)))
+    (or (cadr mem) (car all))))
 
 (defun public-packages ()
   (loop for p in (list-all-packages)
@@ -195,7 +211,7 @@ string and an empty string."
 
 (defun names (package what)
   (sort
-   (loop for sym being the present-symbols of package
+   (loop for sym being the external-symbols of package
       when (is sym what) collect sym
       when (is `(setf ,sym) what) collect `(setf ,sym))
    #'name<))

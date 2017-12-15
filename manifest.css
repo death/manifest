@@ -36,7 +36,7 @@ ul.packages {
 
 th { text-align: left; }
 
-.symbol, .package {
+.symbol {
     text-transform: lowercase;
 }
 
@@ -54,5 +54,21 @@ li {
     padding: 1em 1em 1em 1em;
     margin-bottom: 1em;
     border-radius: 4px;
-    font-size: larger;
+}
+
+.next-package {
+    float: right;
+    background: #f5f5ff;
+    padding: 1em 1em 1em 1em;
+}
+
+.prev-package {
+    float: left;
+    background: #f5f5ff;
+    padding: 1em 1em 1em 1em;
+}
+
+h1 {
+    font-size: 35px;
+    text-align: center;
 }
