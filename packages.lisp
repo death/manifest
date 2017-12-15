@@ -2,8 +2,8 @@
 
 (defpackage :manifest
   (:use :closer-common-lisp
-        :monkeylib-html
         :toot
         :com.gigamonkeys.utilities)
+  (:import-from :yaclml :with-yaclml-stream)
   (:export :start
            :stop))

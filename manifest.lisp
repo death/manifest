@@ -68,69 +68,61 @@ string and an empty string."
     (when-let (package (find-package (case-invert-name package-name)))
       (let ((some-docs-p nil))
         (with-response-body (s request)
-          (with-html-output (s)
-            (:html
-              (:head
-               (:title (:format "Package: ~a" (package-name package)))
-               (:script :type "text/javascript" :src "/jquery-1.7.1.js")
-               (:script :type "text/javascript" :src "/manifest.js")
-               (:link :rel "stylesheet" :type "text/css" :href "/manifest.css"))
+          (with-yaclml-stream s
+            (<:html
+              (<:head
+               (<:title (<:format "Package: ~A" (package-name package)))
+               (<:stylesheet "/manifest.css"))
+              (<:body
+               (<:div :style "float: right"
+                      (<:checkbox :id "toggle-internals")
+                      " Show internal symbols")
+               (<:h1 (<:a :href "/" "Manifest"))
+               (<:h2 (<:ah (package-name package)))
 
-              (:body
-               (:div :style "float: right" (:input :id "toggle-internals" :type "checkbox") " Show internal symbols")
-               (:h1 (:a :href "/" "Manifest"))
-               (:h2 (:print (package-name package)))
+               (when (package-nicknames package)
+                 (<:p :class "nicknames"
+                      (<:format "Nicknames: ~{~a~^, ~}" (package-nicknames package))))
 
+               (when (documentation package t)
+                 (<:p :class "package-desc"
+                      (<:ah (documentation package t))))
 
-                (when (package-nicknames package)
-                  (html
-                    ((:p :class "nicknames")
-                     (:format "Nicknames: ~{~a~^, ~}" (package-nicknames package)))))
+               (let ((readme (readme-text package-name)))
+                 (when readme
+                   (setf some-docs-p t)
+                   (<:pre (<:ai readme))))
 
-                (when (documentation package t)
-                  (html
-                    ((:p :class "package-desc") (:print (documentation package t)))))
+               (loop for what in *categories*
+                     for names = (names package what)
+                     when names
+                     do (setf some-docs-p t)
+                        (<:h2 (<:format "~:(~a~)" (pluralization what)))
+                        (<:table
+                         (dolist (sym names)
+                           (<:tr :class (format nil "~:[not-documented~;~]~:[ internal~;~]" (docs-for sym what) (exported-p sym))
+                                 (<:td :class "symbol" (<:ah (princ-to-string sym)))
+                                 (<:td :class "docs" (<:ah (or (docs-for sym what) "NO DOCS!")))))))
 
-                (let ((readme (readme-text package-name)))
-                  (when readme
-                    (setf some-docs-p t)
-                    (html (:pre readme))))
+               (let ((used-by (sort (package-used-by-list package) #'string< :key #'package-name)))
+                 (when used-by
+                   (<:h2 "Used by:")
+                   (<:ul
+                    (loop for p in used-by
+                          do (<:li (<:a :href (format nil "/package/~(~A~)" (package-name p))
+                                        (<:ah (package-name p))))))))
 
-                (loop for what in *categories*
-                   for names = (names package what)
-                   when names do
-                     (setf some-docs-p t)
-                     (html
-                     (:h2 (:format "~:(~a~)" (pluralization what)))
-                     (:table
-                      (dolist (sym names)
-                        (html
-                          ((:tr :class (:format "~:[not-documented~;~]~:[ internal~;~]" (docs-for sym what) (exported-p sym)))
-                           (:td :class "symbol" (:print (princ-to-string sym)))
-                           (:td :class "docs" (:print (or (docs-for sym what) "NO DOCS!")))))))))
-
-
-                (let ((used-by (sort (package-used-by-list package) #'string< :key #'package-name)))
-                  (when used-by
-                    (html
-                      (:h2 "Used by:")
-                      (:ul
-                       (loop for p in used-by do
-                            (html (:li ((:a :href (:format "./~(~a~)" (package-name p)))
-                                        (:print (package-name p))))))))))
-
-                (let ((uses (sort (package-use-list package) #'string< :key #'package-name)))
-                  (when uses
-                    (html
-                      (:h2 "Uses:")
-                      (:ul
-                       (loop for p in uses do
-                            (html (:li ((:a :href (:format "./~(~a~)" (package-name p)))
-                                        (:print (package-name p))))))))))
+               (let ((uses (sort (package-use-list package) #'string< :key #'package-name)))
+                 (when uses
+                   (<:h2 "Uses:")
+                   (<:ul
+                    (loop for p in uses
+                          do (<:li (<:a :href (format nil "/package/~(~A~)" (package-name p))
+                                        (<:ah (package-name p))))))))
 
 
                 (unless some-docs-p
-                  (html (:p "Uh oh! No docs at all.")))))))))))
+                  (<:p "Uh oh! No docs at all."))))))))))
 
 (defun exported-p (sym)
   (cond
@@ -142,17 +134,19 @@ string and an empty string."
 
 (defun index-page (request)
   (with-response-body (s request)
-    (with-html-output (s)
-      (:html
-        (:head
-         (:title "Manifest: all packages")
-         (:link :rel "stylesheet" :type "text/css" :href "/manifest.css"))
-        (:body
-         (:h1 (:a :href "/" "Manifest"))
-         (:h2 "All Packages")
-         ((:ul :class "packages")
-          (loop for pkg in (sort (mapcar #'package-name (public-packages)) #'string<)
-             do (html (:li (:a :class "package" :href (:format "/package/~a" (case-invert-name pkg)) pkg))))))))))
+    (with-yaclml-stream s
+      (<:html
+        (<:head
+         (<:title "Manifest: all packages")
+         (<:stylesheet "/manifest.css"))
+        (<:body
+         (<:h1 (<:a :href "/" "Manifest"))
+         (<:h2 "All Packages")
+         (<:ul :class "packages"
+               (loop for pkg in (sort (mapcar #'package-name (public-packages)) #'string<)
+                     do (<:li (<:a :class "package"
+                                   :href (format nil "/package/~A" (case-invert-name pkg))
+                                   (<:ah pkg))))))))))
 
 (defun public-packages ()
   (loop for p in (list-all-packages)

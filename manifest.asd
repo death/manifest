@@ -9,7 +9,8 @@
                :toot
                :puri
                :split-sequence
-               :monkeylib-html)
+               :monkeylib-html
+               :yaclml)
   :components ((:file "packages")
                (:file "manifest" :depends-on ("packages"))
                #+quicklisp(:file "quicklisp" :depends-on ("packages"))))
