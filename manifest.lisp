@@ -11,7 +11,7 @@
 
 (defparameter *categories* '(:function :macro :generic-function :slot-accessor :variable :class :condition :constant))
 
-(defun start (&key (port 0))
+(defun start (&key (port 8080))
   "Start the manifest server and return the URL to browse. By default
 picks a random unused port or you can specify a port with the :port
 keyword argument."
